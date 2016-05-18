@@ -22,6 +22,8 @@ struct symbol {             /* a variable name */
  * ์V symbol ref
  * = assignment
  * K constant
+ * S literal string
+ * A Expression
  */
 
 /* node in the abstraction syntax tree */
@@ -44,6 +46,14 @@ struct loop {
     struct ast *to;     /* end number */
     struct ast *inc;    /* incremental number */
     struct ast *tl;     /* then branch or do list */
+};
+
+struct print {
+    int nodetype;           /* type S or A */
+    union arg {             /* argument of the print function */
+        char *str;          /* string argument */
+        struct ast *exp;    /* expression argument */
+    } arg;
 };
 
 struct numval {
@@ -70,6 +80,7 @@ struct symbol *lookup(char*);
 /* build an AST */
 struct ast *newast (int nodetype, struct ast *l, struct ast *r);
 struct ast *newcmp (int cmptype, struct ast *l, struct ast *r);
+struct ast *newprint (int nodetype, struct ast *exp, char *str);
 struct ast *newref (struct symbol *s);
 struct ast *newasgn (struct symbol *s, struct ast *v);
 struct ast *newnum (int64_t d);

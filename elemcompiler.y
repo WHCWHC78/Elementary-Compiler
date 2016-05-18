@@ -9,16 +9,18 @@
 
 %union {
     struct ast *node;
-    int64_t num;
     struct symbol *sym;         /* which symbol */
+    int64_t num;
     int cmptype;                /* which compare operation */
+    char *str;                  /* literal string */
 }
 
 /* declare tokens */
+%token <str> STRING
 %token <num> NUMBER
 %token <sym> VAR
 %token EOL
-%token IF LOOP TO
+%token IF LOOP TO PRINT
 
 %nonassoc <cmptype> CMP
 %right '='
@@ -50,6 +52,8 @@ exp: factor
    | exp '+' factor                 { $$ = newast('+', $1, $3); }
    | exp '-' factor                 { $$ = newast('-', $1, $3); }
    | VAR '=' exp                    { $$ = newasgn($1, $3); }
+   | PRINT '(' STRING ')'           { $$ = newprint('S', NULL, $3); }
+   | PRINT '(' exp ')'              { $$ = newprint('A', $3, NULL); }
    ;
 
 factor: term

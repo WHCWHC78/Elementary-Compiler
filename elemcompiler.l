@@ -37,6 +37,9 @@ EXP ([Ee][-+]?[0-9]+)
 
 "if"                    { return IF; }
 "loop"                  { return LOOP; }
+"print"                 { return PRINT; }
+
+\"[ -~]+\"              { yylval.str = strdup(yytext); return STRING; }
 
 [a-zA-Z][a-zA-Z0-9]*    { yylval.sym = lookup(yytext); return VAR; }    
 

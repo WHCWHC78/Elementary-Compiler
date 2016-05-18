@@ -78,6 +78,25 @@ struct ast* newnum (int64_t num)
     return (struct ast*) a;
 }
 
+struct ast* newprint (int nodetype, struct ast *exp, char *str)
+{
+    struct print *a = (struct print*) malloc(sizeof(struct print));
+
+    if (!a) {
+        yyerror("out of space");
+        exit(0);
+    }
+
+    a->nodetype = nodetype;
+
+    if (nodetype == 'A')
+        a->arg.exp = exp;
+    else
+        a->arg.str = str;
+
+    return (struct ast*) a;
+}
+
 struct ast* newcmp (int cmptype, struct ast *l, struct ast *r)
 {
     struct ast *a = (struct ast*) malloc(sizeof(struct ast));
@@ -187,6 +206,16 @@ void treefree (struct ast *a)
         case 'V':
             break;
 
+        /* print expression */
+        case 'A':
+            treefree(((struct print*)a)->arg.exp);
+            break;
+
+        /* print string */
+        case 'S':
+            free(((struct print*)a)->arg.str);
+            break;
+
         /* assignment */
         case '=':
             treefree(((struct symasgn*)a)->v);
@@ -221,7 +250,7 @@ void treefree (struct ast *a)
 
 int64_t eval (struct ast *a)
 {
-    int64_t v;
+    int64_t v = 0;
     //int64_t count;
 
     if (!a) {
@@ -241,6 +270,17 @@ int64_t eval (struct ast *a)
             v = ((struct symref*)a)->s->value;
             break;
             
+        /* print expression */
+        case 'A':
+            v = eval(((struct print*)a)->arg.exp);
+            printf("%ld\n", v);
+            break;
+            
+        /* print literal string */
+        case 'S':
+            printf("%s\n", (((struct print*)a)->arg.str));
+            break;
+
             /* assignment */
         case '=':
             v = ((struct symasgn*)a)->s->value = eval(((struct symasgn*)a)->v);
@@ -291,8 +331,6 @@ int64_t eval (struct ast *a)
 
             /* condition */
         case 'C':
-            v = 0; /* a default value */
-
             if (eval(((struct cond*)a)->cond) != 0) {
                 if (((struct cond*)a)->tl)
                     v = eval(((struct cond*)a)->tl);
@@ -302,8 +340,6 @@ int64_t eval (struct ast *a)
 
             /* loop */
         case 'L':
-            v = 0; /* a default value */
-
             if (((struct loop*)a)->tl) {
                 int64_t count = eval(((struct loop*)a)->from);
                 int64_t to = eval(((struct loop*)a)->to);

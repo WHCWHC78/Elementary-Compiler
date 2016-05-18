@@ -45,14 +45,16 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    NUMBER = 258,
-    VAR = 259,
-    EOL = 260,
-    IF = 261,
-    LOOP = 262,
-    TO = 263,
-    CMP = 264,
-    UMINUS = 265
+    STRING = 258,
+    NUMBER = 259,
+    VAR = 260,
+    EOL = 261,
+    IF = 262,
+    LOOP = 263,
+    TO = 264,
+    PRINT = 265,
+    CMP = 266,
+    UMINUS = 267
   };
 #endif
 
@@ -64,11 +66,12 @@ union YYSTYPE
 #line 10 "elemcompiler.y" /* yacc.c:1909  */
 
     struct ast *node;
-    int64_t num;
     struct symbol *sym;         /* which symbol */
+    int64_t num;
     int cmptype;                /* which compare operation */
+    char *str;                  /* literal string */
 
-#line 72 "elemcompiler.tab.h" /* yacc.c:1909  */
+#line 75 "elemcompiler.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
