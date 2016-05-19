@@ -6,3 +6,4 @@ elemcompiler: elemcompiler.c elemcompiler.l elemcompiler.y elemcompiler.h
 	gcc -Wall elemcompiler.c elemcompiler.tab.c elemcompiler.lex.c -o $@ -lm
 
 %.c: %.y
+	test

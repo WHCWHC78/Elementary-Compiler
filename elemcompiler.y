@@ -36,7 +36,8 @@
 
 root: /*nothing */
     | root stmt EOL         {
-                                printf("= %ld\n", eval($2));
+                                //printf("= %ld\n", eval($2));
+                                eval($2);
                                 treefree($2);
                             }
     | root error EOL        { yyerrok; }

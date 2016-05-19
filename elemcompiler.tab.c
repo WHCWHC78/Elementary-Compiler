@@ -445,9 +445,9 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    37,    37,    38,    42,    45,    46,    47,    50,    51,
-      52,    53,    54,    55,    56,    59,    60,    61,    62,    65,
-      66,    67,    68,    70,    71
+       0,    37,    37,    38,    43,    46,    47,    48,    51,    52,
+      53,    54,    55,    56,    57,    60,    61,    62,    63,    66,
+      67,    68,    69,    71,    72
 };
 #endif
 
@@ -1254,127 +1254,128 @@ yyreduce:
         case 3:
 #line 38 "elemcompiler.y" /* yacc.c:1646  */
     {
-                                printf("= %ld\n", eval((yyvsp[-1].node)));
+                                //printf("= %ld\n", eval($2));
+                                eval((yyvsp[-1].node));
                                 treefree((yyvsp[-1].node));
                             }
-#line 1261 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1262 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 42 "elemcompiler.y" /* yacc.c:1646  */
+#line 43 "elemcompiler.y" /* yacc.c:1646  */
     { yyerrok; }
-#line 1267 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1268 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 46 "elemcompiler.y" /* yacc.c:1646  */
+#line 47 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newcond((yyvsp[-4].node), (yyvsp[-1].node)); }
-#line 1273 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1274 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 47 "elemcompiler.y" /* yacc.c:1646  */
+#line 48 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newloop(newnum((yyvsp[-8].num)), newnum((yyvsp[-6].num)), newnum((yyvsp[-4].num)), (yyvsp[-1].node)); }
-#line 1279 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1280 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 51 "elemcompiler.y" /* yacc.c:1646  */
+#line 52 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newcmp((yyvsp[-1].cmptype), (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1285 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1286 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 52 "elemcompiler.y" /* yacc.c:1646  */
+#line 53 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('+', (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1291 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1292 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 53 "elemcompiler.y" /* yacc.c:1646  */
+#line 54 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('-', (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1297 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1298 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 54 "elemcompiler.y" /* yacc.c:1646  */
+#line 55 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newasgn((yyvsp[-2].sym), (yyvsp[0].node)); }
-#line 1303 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1304 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 55 "elemcompiler.y" /* yacc.c:1646  */
+#line 56 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newprint('S', NULL, (yyvsp[-1].str)); }
-#line 1309 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1310 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 56 "elemcompiler.y" /* yacc.c:1646  */
+#line 57 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newprint('A', (yyvsp[-1].node), NULL); }
-#line 1315 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1316 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 60 "elemcompiler.y" /* yacc.c:1646  */
+#line 61 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('*', (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1321 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1322 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 61 "elemcompiler.y" /* yacc.c:1646  */
+#line 62 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('/', (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1327 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1328 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 62 "elemcompiler.y" /* yacc.c:1646  */
+#line 63 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('%', (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1333 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1334 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 65 "elemcompiler.y" /* yacc.c:1646  */
+#line 66 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newnum((yyvsp[0].num)); }
-#line 1339 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1340 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 66 "elemcompiler.y" /* yacc.c:1646  */
+#line 67 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newref((yyvsp[0].sym)); }
-#line 1345 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1346 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 67 "elemcompiler.y" /* yacc.c:1646  */
+#line 68 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = (yyvsp[-1].node); }
-#line 1351 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1352 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 68 "elemcompiler.y" /* yacc.c:1646  */
+#line 69 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = newast('M', (yyvsp[0].node), NULL); }
-#line 1357 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1358 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 70 "elemcompiler.y" /* yacc.c:1646  */
+#line 71 "elemcompiler.y" /* yacc.c:1646  */
     { (yyval.node) = NULL; }
-#line 1363 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1364 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 71 "elemcompiler.y" /* yacc.c:1646  */
+#line 72 "elemcompiler.y" /* yacc.c:1646  */
     {
                                         if ((yyvsp[0].node) == NULL)
                                             (yyval.node) = (yyvsp[-2].node);
                                         else
                                             (yyval.node) = newast('E', (yyvsp[-2].node), (yyvsp[0].node));
                                     }
-#line 1374 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1375 "elemcompiler.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1378 "elemcompiler.tab.c" /* yacc.c:1646  */
+#line 1379 "elemcompiler.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
