@@ -53,8 +53,7 @@ extern int yydebug;
     LOOP = 263,
     TO = 264,
     PRINT = 265,
-    CMP = 266,
-    UMINUS = 267
+    UMINUS = 266
   };
 #endif
 
@@ -68,10 +67,9 @@ union YYSTYPE
     struct ast *node;
     struct symbol *sym;         /* which symbol */
     int64_t num;
-    int cmptype;                /* which compare operation */
     char *str;                  /* literal string */
 
-#line 75 "elemcompiler.tab.h" /* yacc.c:1909  */
+#line 73 "elemcompiler.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -10,11 +10,11 @@
 struct symbol {             /* a variable name */
     char *name;
     int64_t value;
+    uint8_t offset;
 };
 
 /* node types
  * + - * / %
- * 1-6 comparison ops
  * M unary minus
  * E expression list
  * C IF statement
@@ -48,10 +48,15 @@ struct loop {
     struct ast *tl;     /* then branch or do list */
 };
 
+struct litstr {
+    char *str;
+    uint8_t label;
+};
+
 struct print {
     int nodetype;           /* type S or A */
     union arg {             /* argument of the print function */
-        char *str;          /* string argument */
+        struct litstr *ls;  /* string argument */
         struct ast *exp;    /* expression argument */
     } arg;
 };
@@ -79,7 +84,6 @@ struct symbol *lookup(char*);
 
 /* build an AST */
 struct ast *newast (int nodetype, struct ast *l, struct ast *r);
-struct ast *newcmp (int cmptype, struct ast *l, struct ast *r);
 struct ast *newprint (int nodetype, struct ast *exp, char *str);
 struct ast *newref (struct symbol *s);
 struct ast *newasgn (struct symbol *s, struct ast *v);
@@ -89,6 +93,7 @@ struct ast *newloop (struct ast *from, struct ast *to, struct ast *inc, struct a
 
 /* evaluate an AST */
 int64_t eval (struct ast *);
+void gen_asm (struct ast *);
 
 /* delete and free an AST */
 void treefree (struct ast *);

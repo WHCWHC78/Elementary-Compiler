@@ -11,7 +11,6 @@
     struct ast *node;
     struct symbol *sym;         /* which symbol */
     int64_t num;
-    int cmptype;                /* which compare operation */
     char *str;                  /* literal string */
 }
 
@@ -22,7 +21,6 @@
 %token EOL
 %token IF LOOP TO PRINT
 
-%nonassoc <cmptype> CMP
 %right '='
 %left '+' '-'
 %left '*' '/' '%'
@@ -31,13 +29,13 @@
 %type <node> term factor exp explist stmt
 
 %start root
-
 %%
 
 root: /*nothing */
     | root stmt EOL         {
-                                //printf("= %ld\n", eval($2));
-                                eval($2);
+                                //eval($2);
+                                //printf("# new one\n");
+                                gen_asm($2);
                                 treefree($2);
                             }
     | root error EOL        { yyerrok; }
@@ -49,7 +47,6 @@ stmt: exp ';'
     ;
 
 exp: factor
-   | exp CMP exp                    { $$ = newcmp($2, $1, $3); }
    | exp '+' factor                 { $$ = newast('+', $1, $3); }
    | exp '-' factor                 { $$ = newast('-', $1, $3); }
    | VAR '=' exp                    { $$ = newasgn($1, $3); }

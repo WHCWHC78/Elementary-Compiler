@@ -29,18 +29,18 @@ EXP ([Ee][-+]?[0-9]+)
 "{" |
 "}"                     { return yytext[0]; }
 
-">"                     { yylval.cmptype = 1; return CMP; }
-"<"                     { yylval.cmptype = 2; return CMP; }
-"<>"                    { yylval.cmptype = 3; return CMP; }
-"=="                    { yylval.cmptype = 4; return CMP; }
-">="                    { yylval.cmptype = 5; return CMP; }
-"<="                    { yylval.cmptype = 6; return CMP; }
-
 "if"                    { return IF; }
 "loop"                  { return LOOP; }
 "print"                 { return PRINT; }
 
-\"[ -~]+\"              { yylval.str = strdup(yytext); return STRING; }
+\"[ -~]+\"              { 
+                            yylval.str = strdup(yytext); 
+                            //printf("%s\n", yylval.str);
+                            // push_label("newone");
+                            // .newone:
+                            // .string yylval.str
+                            return STRING; 
+                        }
 
 0(x|X)[a-fA-F0-9]+      { yylval.num = hexToDec(yytext); return NUMBER; }
 [0-9]+                  { yylval.num = strToDec(yytext); return NUMBER; }

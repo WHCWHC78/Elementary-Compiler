@@ -9,6 +9,18 @@
 #include <math.h>
 
 #include "elemcompiler.h"
+#include "codegen.h"
+
+static uint8_t offsetCount = 0;
+static uint8_t branchCount = 0;
+static uint8_t litstrCount = 2;
+static uint8_t symCount = 0;
+
+static FILE *fp;
+static char *text;
+static char *data;
+
+
 
 /* symbol table */
 /* hash a symbol */
@@ -35,6 +47,9 @@ struct symbol* lookup (char *sym)
         if (!sp->name) {    /* new entry */
             sp->name = strdup(sym);
             sp->value = 0;
+            sp->offset = 0;
+
+            ++symCount;
 
             return sp;
         }
@@ -81,6 +96,7 @@ struct ast* newnum (int64_t num)
 struct ast* newprint (int nodetype, struct ast *exp, char *str)
 {
     struct print *a = (struct print*) malloc(sizeof(struct print));
+    struct litstr *ls = (struct litstr*) malloc(sizeof(struct litstr));
 
     if (!a) {
         yyerror("out of space");
@@ -91,26 +107,18 @@ struct ast* newprint (int nodetype, struct ast *exp, char *str)
 
     if (nodetype == 'A')
         a->arg.exp = exp;
-    else
-        a->arg.str = str;
+    else {
+        char buf[21];
 
-    return (struct ast*) a;
-}
+        sprintf(buf, "LC%u", litstrCount);
+        data = buildDataSection(data, defineString(buf, str));
 
-struct ast* newcmp (int cmptype, struct ast *l, struct ast *r)
-{
-    struct ast *a = (struct ast*) malloc(sizeof(struct ast));
-
-    if (!a) {
-        yyerror("out of space");
-        exit(0);
+        ls->str = str;
+        ls->label = litstrCount++;
+        a->arg.ls = ls;
     }
 
-    a->nodetype = '0' + cmptype;
-    a->l = l;
-    a->r = r;
-
-    return a;
+    return (struct ast*) a;
 }
 
 struct ast* newref (struct symbol *s)
@@ -213,7 +221,8 @@ void treefree (struct ast *a)
 
         /* print string */
         case 'S':
-            free(((struct print*)a)->arg.str);
+            free(((struct print*)a)->arg.ls->str);
+            free(((struct print*)a)->arg.ls);
             break;
 
         /* assignment */
@@ -248,10 +257,237 @@ void treefree (struct ast *a)
     free(a); /*always free the node itself */
 }
 
+void gen_asm (struct ast *a)
+{
+    struct symbol *s;
+    char buf[21];
+
+    if (!a) {
+        yyerror("internal error, null eval");
+
+        return;
+    }
+
+    switch (a->nodetype) {
+        /* constant */
+        case 'K':
+            //printf("\n# constant\n");
+
+            text = buildTextSection(text, sub("$8", "%rsp"));
+            sprintf(buf, "$%ld", ((struct numval*)a)->number);
+            text = buildTextSection(text, movl(buf, "%eax"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+            
+        /*symbol reference */
+        case 'V':
+            //printf("\n# reference\n");
+
+            s = lookup(((struct symasgn*)a)->s->name);
+
+            if (s->offset == 0) {
+                s->offset = (++offsetCount) * 8;
+                sprintf(buf, "-%u(%%rbp)", s->offset);
+                text = buildTextSection(text, movq("$0", buf));
+            }
+
+            sprintf(buf, "-%u(%%rbp)", s->offset);
+            text = buildTextSection(text, movq(buf, "%rax"));
+            text = buildTextSection(text, sub("$8", "%rsp"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+            
+        /* print expression */
+        case 'A':
+            gen_asm(((struct print*)a)->arg.exp);
+
+            //printf("\n# print A\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, movq("%rax", "%rsi"));
+            text = buildTextSection(text, movl("$.LC0", "%edi"));
+            text = buildTextSection(text, movl("$0", "%eax"));
+            text = buildTextSection(text, sysCallPrint());
+
+            break;
+            
+        /* print literal string */
+        case 'S':
+            //printf("\n# print S\n");
+
+            sprintf(buf, "$.LC%u", ((struct print*)a)->arg.ls->label);
+            text = buildTextSection(text, movl(buf, "%esi"));
+            text = buildTextSection(text, movl("$.LC1", "%edi"));
+            text = buildTextSection(text, movl("$0", "%eax"));
+            text = buildTextSection(text, sysCallPrint());
+            break;
+
+            /* assignment */
+        case '=':
+            s = lookup(((struct symasgn*)a)->s->name);
+
+            if (s->offset == 0) {
+               s->offset = (++offsetCount) * 8;
+            }
+
+            gen_asm(((struct symasgn*)a)->v);
+
+            //printf("\n# assignment\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            sprintf(buf, "-%u(%%rbp)", s->offset);
+            text = buildTextSection(text, movq("%rax", buf));
+            break;
+
+            /* expressions */
+        case '+':
+            gen_asm(a->r);
+            gen_asm(a->l);
+
+            //printf("\n# addition\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rdx"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, add("%rdx", "%rax"));
+            text = buildTextSection(text, sub("$8", "%rsp"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+        case '-':
+            gen_asm(a->r);
+            gen_asm(a->l);
+
+            //printf("\n# subtraction\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, sub("(%rsp)", "%rax"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+        case '*':
+            gen_asm(a->r);
+            gen_asm(a->l);
+
+            //printf("\n# multiplication\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, imul("(%rsp)", "%rax"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+        case '/':
+            gen_asm(a->r);
+            gen_asm(a->l);
+
+            //printf("\n# division\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, cqto());
+            text = buildTextSection(text, idiv("(%rsp)"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+        case '%':
+            gen_asm(a->r);
+            gen_asm(a->l);
+
+            //printf("\n# modulation\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, add("$8", "%rsp"));
+            text = buildTextSection(text, cqto());
+            text = buildTextSection(text, idiv("(%rsp)"));
+            text = buildTextSection(text, movq("%rdx", "(%rsp)"));
+
+            break;
+        case 'M':
+            gen_asm(a->l);
+
+            //printf("\n# Negation\n");
+
+            text = buildTextSection(text, movq("(%rsp)", "%rax"));
+            text = buildTextSection(text, neg("%rax"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
+            break;
+
+            /* control flow */
+            /* null expressions allowed in the grammar, so check for them */
+
+            /* condition */
+        case 'C':
+            gen_asm(((struct cond*)a)->cond);
+
+            //printf("\n# Condition\n");
+
+            text = buildTextSection(text, compare("$0", "(%rsp)"));
+            sprintf(buf, "L%u", branchCount);
+            text = buildTextSection(text, buildJump("je", buf));
+
+            if (((struct cond*)a)->tl)
+                gen_asm(((struct cond*)a)->tl);
+
+            sprintf(buf, "L%u", branchCount++);
+            text = buildTextSection(text, buildLabel(buf));
+
+            break;
+
+            /* loop */
+        case 'L':
+            if (((struct loop*)a)->tl) {
+                //printf("\n# Loop\n");
+
+                sprintf(buf, "$%ld", eval(((struct loop*)a)->from));
+                text = buildTextSection(text, movl(buf, "%eax"));
+                text = buildTextSection(text, movq("%rax", "from(%rip)"));
+                sprintf(buf, "L%u", branchCount);
+                text = buildTextSection(text, buildJump("jmp", buf));
+                sprintf(buf, "L%u", ++branchCount);
+                text = buildTextSection(text, buildLabel(buf));
+
+                gen_asm(((struct loop*)a)->tl);
+
+                text = buildTextSection(text, movq("from(%rip)", "%rdx"));
+                sprintf(buf, "$%ld", eval(((struct loop*)a)->inc));
+                text = buildTextSection(text, movl(buf, "%eax"));
+                text = buildTextSection(text, add("%rdx", "%rax"));
+                text = buildTextSection(text, movq("%rax", "from(%rip)"));
+                sprintf(buf, "L%u", (branchCount - 1));
+                text = buildTextSection(text, buildLabel(buf));
+                sprintf(buf, "$%ld", eval(((struct loop*)a)->to));
+                text = buildTextSection(text, movl(buf, "%eax"));
+                text = buildTextSection(text, compare("%rax", "from(%rip)"));
+                sprintf(buf, "L%u", branchCount);
+                text = buildTextSection(text, buildJump("jle", buf));
+
+                ++branchCount;
+            }
+
+            break;
+
+            /* list of statements */
+        case 'E':
+            gen_asm(a->l);
+            gen_asm(a->r);
+            break;
+
+        default:
+            printf("internal error: bad node %c\n", a->nodetype);
+    }
+}
+
 int64_t eval (struct ast *a)
 {
     int64_t v = 0;
-    //int64_t count;
 
     if (!a) {
         yyerror("internal error, null eval");
@@ -265,7 +501,7 @@ int64_t eval (struct ast *a)
             v = ((struct numval*)a)->number;
             break;
             
-        /*num reference */
+        /*symbol reference */
         case 'V':
             v = ((struct symref*)a)->s->value;
             break;
@@ -278,7 +514,7 @@ int64_t eval (struct ast *a)
             
         /* print literal string */
         case 'S':
-            printf("%s\n", (((struct print*)a)->arg.str));
+            printf("%s\n", (((struct print*)a)->arg.ls->str));
             break;
 
             /* assignment */
@@ -306,26 +542,6 @@ int64_t eval (struct ast *a)
             v = -eval(a->l);
             break;
 
-            /* comparisons */
-        case '1':
-            v = (eval(a->l) > eval(a->r)) ? 1 : 0;
-            break;
-        case '2':
-            v = (eval(a->l) < eval(a->r)) ? 1 : 0;
-            break;
-        case '3':
-            v = (eval(a->l) != eval(a->r)) ? 1 : 0;
-            break;
-        case '4':
-            v = (eval(a->l) == eval(a->r)) ? 1 : 0;
-            break;
-        case '5':
-            v = (eval(a->l) >= eval(a->r)) ? 1 : 0;
-            break;
-        case '6':
-            v = (eval(a->l) <= eval(a->r)) ? 1 : 0;
-            break;
-
             /* control flow */
             /* null expressions allowed in the grammar, so check for them */
 
@@ -335,7 +551,6 @@ int64_t eval (struct ast *a)
                 if (((struct cond*)a)->tl)
                     v = eval(((struct cond*)a)->tl);
             }
-
             break;
 
             /* loop */
@@ -379,6 +594,9 @@ void yyerror (char *s, ...)
 int main(int argc, char **argv)
 {
     extern FILE *yyin;
+    char *asmFile;
+    char *ptr;
+    char buf[21];
 
     if (argc > 1) {
         if (!(yyin = fopen(argv[1], "r"))) {
@@ -391,6 +609,38 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    text = (char *) malloc(sizeof(char));
+    data = (char *) malloc(sizeof(char));
+    *(text) = '\0';
+    *(data) = '\0';
+    asmFile = strdup(argv[1]);
+    ptr = strchr(asmFile, '.');
 
-    return yyparse();
+    *(ptr+1) = 's';
+    *(ptr+2) = '\0';
+
+    fp = createFile(asmFile);
+
+    printf("Start Parsing ...\n");
+    printf("...\n");
+    printf("...\n");
+
+    if (yyparse()) {
+        printf("\nParsing Error\n");
+        closeFile(fp);
+
+        return -1;
+    }
+
+    sprintf(buf, "$%u", (symCount+1)*8);
+    text = buildTextSection(sub(buf, "%rsp"), text);
+
+    putBssSection(fp, "");
+    putDataSection(fp, data);
+    putTextSection(fp, text);
+    closeFile(fp);
+
+    printf("Finished Parsing\n");
+
+    return 0;
 }
