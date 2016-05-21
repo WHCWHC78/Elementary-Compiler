@@ -341,6 +341,9 @@ void gen_asm (struct ast *a)
             text = buildTextSection(text, add("$8", "%rsp"));
             sprintf(buf, "-%u(%%rbp)", s->offset);
             text = buildTextSection(text, movq("%rax", buf));
+            text = buildTextSection(text, sub("$8", "%rsp"));
+            text = buildTextSection(text, movq("%rax", "(%rsp)"));
+
             break;
 
             /* expressions */
@@ -613,6 +616,7 @@ int main(int argc, char **argv)
     data = (char *) malloc(sizeof(char));
     *(text) = '\0';
     *(data) = '\0';
+
     asmFile = strdup(argv[1]);
     ptr = strchr(asmFile, '.');
 

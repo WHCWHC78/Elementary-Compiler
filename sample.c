@@ -16,7 +16,7 @@ print("\n");
 print("dogs");
 print("\n");
 
-if (b) { \
+if (b = 0) { \
     a = 5 * 6; \
     print(a); \
     a = (a - b * 9 - 6 + 14) / 21/7; \
